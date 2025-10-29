@@ -31,7 +31,7 @@ static lv_color_t arc_color[] = {
 
 static void anim_timer_cb(lv_timer_t *timer)
 {
-    my_timer_context_t *timer_ctx = (my_timer_context_t *) timer->user_data;
+    my_timer_context_t *timer_ctx = (my_timer_context_t *) lv_timer_get_user_data(timer);
     int count = timer_ctx->count_val;
     lv_obj_t *scr = timer_ctx->scr;
 
