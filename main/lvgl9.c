@@ -147,9 +147,9 @@ static void touch_event(lv_event_t *e)
 {
 uint8_t n = rand()%0xff;
 
-  if (e->code == LV_EVENT_CLICKED)
+  if (lv_event_get_code(e) == LV_EVENT_CLICKED)
   {
-    lv_obj_t *label = (lv_obj_t*)e->user_data;
+    lv_obj_t *label = (lv_obj_t*)lv_event_get_user_data(e);
     lv_obj_set_style_text_color(label, lv_color_make(n, n, n), 0);
   }
 }
