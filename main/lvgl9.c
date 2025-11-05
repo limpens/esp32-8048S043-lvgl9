@@ -10,7 +10,7 @@
 #include <esp_timer.h>
 
 #include <driver/gpio.h>
-#include <driver/i2c.h>
+#include <driver/i2c_master.h>
 
 #include "sdkconfig.h"
 #include "lvgl.h"
@@ -18,32 +18,27 @@
 
 #define TAG "lvgl9"
 
-const i2c_port_t i2c_master_port = I2C_NUM_0;
-
 extern void example_lvgl_demo_ui(lv_obj_t *scr);
-
 
 /*
 * touch related
 */
 
+static i2c_master_bus_handle_t i2c_bus = NULL;
+
 esp_err_t gt911_init_i2c(void)
 {
-    i2c_config_t conf = { .mode = I2C_MODE_MASTER,
-        .sda_io_num = TOUCH_PIN_SDA,
+    i2c_master_bus_config_t i2c_mst_config = {
+        .clk_source = I2C_CLK_SRC_DEFAULT,
+        .i2c_port = I2C_NUM_0,
         .scl_io_num = TOUCH_PIN_SCL,
-        .sda_pullup_en = GPIO_PULLUP_ENABLE,
-        .scl_pullup_en = GPIO_PULLUP_ENABLE,
-        .master = {
-            .clk_speed = TOUCH_FREQ_HZ,
-        },
-        .clk_flags = I2C_SCLK_SRC_FLAG_FOR_NOMAL };
+        .sda_io_num = TOUCH_PIN_SDA,
+        .glitch_ignore_cnt = 7,
+        .flags.enable_internal_pullup = true,
+    };
 
     ESP_LOGI(TAG, "Initializing I2C");
-
-    ESP_ERROR_CHECK(i2c_param_config(i2c_master_port, &conf));
-    ESP_ERROR_CHECK(i2c_driver_install(i2c_master_port, conf.mode, 0, 0, 0));
-
+    ESP_ERROR_CHECK(i2c_new_master_bus(&i2c_mst_config, &i2c_bus));
     return ESP_OK;
 }
 
@@ -63,6 +58,7 @@ void gt911_touch_init(esp_lcd_touch_handle_t *tp)
 
     const esp_lcd_panel_io_i2c_config_t tp_io_config = { 
         .dev_addr = ESP_LCD_TOUCH_IO_I2C_GT911_ADDRESS,
+        .scl_speed_hz = TOUCH_FREQ_HZ,
         .on_color_trans_done = NULL,
         .user_ctx = NULL,
         .control_phase_bytes = 1,
@@ -92,7 +88,7 @@ void gt911_touch_init(esp_lcd_touch_handle_t *tp)
         .interrupt_callback = NULL
         };
 
-    ESP_ERROR_CHECK(esp_lcd_new_panel_io_i2c((esp_lcd_i2c_bus_handle_t)i2c_master_port, &tp_io_config, &tp_io_handle));
+    ESP_ERROR_CHECK(esp_lcd_new_panel_io_i2c(i2c_bus, &tp_io_config, &tp_io_handle));
     ESP_ERROR_CHECK(esp_lcd_touch_new_i2c_gt911(tp_io_handle, &tp_cfg, tp));
 }
 
